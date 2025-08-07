@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC Connect - Lecture & Écriture NFC</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="nfc-icon">📡</div>
+                <h1>NFC Connect</h1>
+            </div>
+            <p class="subtitle">Lecture et écriture de cartes NFC</p>
+        </header>
+
+        <div class="status-bar">
+            <div id="status" class="status">En attente...</div>
+            <div id="compatibility" class="compatibility-warning" style="display: none;">
+                ⚠️ Votre navigateur ne supporte pas l'API Web NFC
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Section Lecture -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📖 Lire une carte NFC</h2>
+                </div>
+                <div class="card-content">
+                    <button id="readBtn" class="btn btn-primary">
+                        <span class="btn-icon">🔍</span>
+                        Commencer la lecture
+                    </button>
+                    <div id="readResult" class="result-container" style="display: none;">
+                        <h3>Données lues :</h3>
+                        <div id="readData" class="data-display"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Écriture -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>✏️ Écrire sur une carte NFC</h2>
+                </div>
+                <div class="card-content">
+                    <div class="input-group">
+                        <label for="writeData">Message à écrire :</label>
+                        <textarea id="writeData" placeholder="Entrez votre message ici..." rows="3"></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label for="recordType">Type d'enregistrement :</label>
+                        <select id="recordType">
+                            <option value="text">Texte</option>
+                            <option value="url">URL</option>
+                            <option value="mime">MIME</option>
+                        </select>
+                    </div>
+                    <button id="writeBtn" class="btn btn-secondary" disabled>
+                        <span class="btn-icon">✍️</span>
+                        Écrire sur la carte
+                    </button>
+                    <div id="writeResult" class="result-container" style="display: none;">
+                        <div id="writeStatus" class="status-message"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Historique -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📋 Historique</h2>
+                    <button id="clearHistory" class="btn btn-small">Effacer</button>
+                </div>
+                <div class="card-content">
+                    <div id="history" class="history-container">
+                        <p class="empty-state">Aucune opération effectuée</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour les détails -->
+    <div id="modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Détails</h3>
+                <button id="closeModal" class="close-btn">×</button>
+            </div>
+            <div class="modal-body">
+                <pre id="modalContent"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
