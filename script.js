@@ -2,36 +2,141 @@
 const appState = {
     isReading: false,
     isWriting: false,
+    currentRecordType: 'text',
     history: JSON.parse(localStorage.getItem('nfc-history') || '[]')
 };
 
 // Éléments DOM
 const elements = {
+    // Status
     status: document.getElementById('status'),
     compatibility: document.getElementById('compatibility'),
+    
+    // Tool Cards
+    scanCard: document.getElementById('scanCard'),
+    writeCard: document.getElementById('writeCard'),
+    toolsCard: document.getElementById('toolsCard'),
+    savedCard: document.getElementById('savedCard'),
+    
+    // Scan Modal
+    scanModal: document.getElementById('scanModal'),
     readBtn: document.getElementById('readBtn'),
-    writeBtn: document.getElementById('writeBtn'),
-    writeData: document.getElementById('writeData'),
-    recordType: document.getElementById('recordType'),
     readResult: document.getElementById('readResult'),
     readData: document.getElementById('readData'),
+    
+    // Write Modal
+    writeModal: document.getElementById('writeModal'),
+    writeFormModal: document.getElementById('writeFormModal'),
+    writeFormTitle: document.getElementById('writeFormTitle'),
+    writeData: document.getElementById('writeData'),
+    writeBtn: document.getElementById('writeBtn'),
     writeResult: document.getElementById('writeResult'),
     writeStatus: document.getElementById('writeStatus'),
+    
+    // History Modal
+    historyModal: document.getElementById('historyModal'),
     history: document.getElementById('history'),
     clearHistory: document.getElementById('clearHistory'),
-    modal: document.getElementById('modal'),
-    modalTitle: document.getElementById('modalTitle'),
-    modalContent: document.getElementById('modalContent'),
-    closeModal: document.getElementById('closeModal')
+    
+    // Detail Modal
+    detailModal: document.getElementById('detailModal'),
+    detailTitle: document.getElementById('detailTitle'),
+    detailContent: document.getElementById('detailContent')
 };
+
+// Gestion des modals
+function showModal(modal) {
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+function hideModal(modal) {
+    modal.classList.remove('active');
+    setTimeout(() => modal.style.display = 'none', 300);
+}
+
+// Fonctions de navigation
+function openScanModal() {
+    showModal(elements.scanModal);
+}
+
+function closeScanModal() {
+    hideModal(elements.scanModal);
+    if (appState.isReading) {
+        // Arrêter la lecture si en cours
+        appState.isReading = false;
+        elements.readBtn.textContent = 'Start Scanning';
+        updateStatus('Lecture annulée', 'info');
+    }
+}
+
+function openWriteModal() {
+    showModal(elements.writeModal);
+}
+
+function closeWriteModal() {
+    hideModal(elements.writeModal);
+}
+
+function openWriteFormModal(recordType) {
+    appState.currentRecordType = recordType;
+    const titles = {
+        'url': 'Ajouter URL',
+        'text': 'Ajouter texte',
+        'contact': 'Ajouter contact',
+        'email': 'Ajouter email',
+        'wifi': 'Ajouter Wi-Fi'
+    };
+    
+    elements.writeFormTitle.textContent = titles[recordType] || 'Add Record';
+    elements.writeData.placeholder = getPlaceholderText(recordType);
+    elements.writeData.value = '';
+    updateWriteButtonState();
+    
+    hideModal(elements.writeModal);
+    setTimeout(() => showModal(elements.writeFormModal), 300);
+}
+
+function closeWriteFormModal() {
+    hideModal(elements.writeFormModal);
+}
+
+function openHistoryModal() {
+    renderHistory();
+    showModal(elements.historyModal);
+}
+
+function closeHistoryModal() {
+    hideModal(elements.historyModal);
+}
+
+function openDetailModal(title, content) {
+    elements.detailTitle.textContent = title;
+    elements.detailContent.textContent = JSON.stringify(content, null, 2);
+    showModal(elements.detailModal);
+}
+
+function closeDetailModal() {
+    hideModal(elements.detailModal);
+}
+
+// Helpers
+function getPlaceholderText(recordType) {
+    const placeholders = {
+        'url': 'https://exemple.com',
+        'text': 'Entrez votre texte ici...',
+        'contact': 'Rodrigue EPUH\n+228976520\nrodrigue@exemple.com',
+        'email': 'rodrigue@exemple.com',
+        'wifi': 'Nom du réseau\nMot de passe'
+    };
+    return placeholders[recordType] || 'Enter content...';
+}
 
 // Vérification de la compatibilité
 function checkCompatibility() {
     if (!('NDEFReader' in window)) {
         elements.compatibility.style.display = 'block';
-        elements.status.textContent = 'API Web NFC non disponible';
-        elements.readBtn.disabled = true;
-        elements.writeBtn.disabled = true;
+        updateStatus('API Web NFC non disponible', 'error');
         return false;
     }
     return true;
@@ -39,13 +144,20 @@ function checkCompatibility() {
 
 // Mise à jour du statut
 function updateStatus(message, type = 'info') {
-    elements.status.textContent = message;
-    elements.status.className = `status ${type}`;
+    const statusText = elements.status.querySelector('.status-text');
+    if (statusText) {
+        statusText.textContent = message;
+    }
+    
+    const statusDot = elements.status.querySelector('.status-dot');
+    if (statusDot) {
+        statusDot.className = `status-dot ${type}`;
+    }
 }
 
 // Formatage des données NDEF
 function formatNDEFData(records) {
-    return records.map(record => {
+    return records.map((record, index) => {
         const decoder = new TextDecoder();
         let data = '';
         
@@ -58,6 +170,7 @@ function formatNDEFData(records) {
         }
 
         return {
+            index: index + 1,
             recordType: record.recordType,
             mediaType: record.mediaType || 'N/A',
             id: record.id || 'N/A',
@@ -71,26 +184,26 @@ function formatNDEFData(records) {
 function displayFormattedData(container, data) {
     container.innerHTML = '';
     
-    data.forEach((record, index) => {
+    data.forEach(record => {
         const recordDiv = document.createElement('div');
-        recordDiv.style.marginBottom = '1rem';
-        recordDiv.style.padding = '1rem';
-        recordDiv.style.border = '1px solid var(--border)';
+        recordDiv.style.marginBottom = '16px';
+        recordDiv.style.padding = '16px';
+        recordDiv.style.border = '1px solid var(--border-light)';
         recordDiv.style.borderRadius = 'var(--radius)';
-        recordDiv.style.background = 'var(--surface)';
+        recordDiv.style.background = 'var(--white)';
         
         recordDiv.innerHTML = `
-            <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--primary-color);">
-                Enregistrement ${index + 1}
+            <div style="font-weight: 600; margin-bottom: 8px; color: var(--primary-green);">
+                Record ${record.index}
             </div>
-            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.4;">
                 <strong>Type:</strong> ${record.recordType}<br>
-                <strong>Media Type:</strong> ${record.mediaType}<br>
+                <strong>Media:</strong> ${record.mediaType}<br>
                 <strong>ID:</strong> ${record.id}<br>
-                <strong>Langue:</strong> ${record.lang}
+                <strong>Language:</strong> ${record.lang}
             </div>
-            <div style="font-weight: 500; margin-bottom: 0.25rem;">Données:</div>
-            <div style="font-family: 'Courier New', monospace; background: var(--border-light); padding: 0.5rem; border-radius: 4px; word-break: break-all;">
+            <div style="font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Content:</div>
+            <div style="font-family: 'SF Mono', Monaco, monospace; background: var(--background); padding: 12px; border-radius: 8px; word-break: break-all; font-size: 13px; line-height: 1.4;">
                 ${record.data}
             </div>
         `;
@@ -105,16 +218,16 @@ async function readNFC() {
     
     try {
         appState.isReading = true;
-        elements.readBtn.textContent = '🔍 Approchez une carte NFC...';
+        elements.readBtn.textContent = 'Recherche tag NFC...';
         elements.readBtn.disabled = true;
-        updateStatus('En attente d\'une carte NFC...', 'reading');
+        updateStatus('Approchez une carte NFC...', 'reading');
 
         const ndef = new NDEFReader();
         await ndef.scan();
 
         const readPromise = new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
-                reject(new Error('Timeout de lecture (30s)'));
+                reject(new Error('Timeout - Aucune carte détectée'));
             }, 30000);
 
             ndef.addEventListener('reading', ({ message, serialNumber }) => {
@@ -150,7 +263,7 @@ async function readNFC() {
         elements.readResult.style.display = 'none';
     } finally {
         appState.isReading = false;
-        elements.readBtn.textContent = '🔍 Commencer la lecture';
+        elements.readBtn.textContent = 'Commencer le scan';
         elements.readBtn.disabled = false;
     }
 }
@@ -161,21 +274,27 @@ async function writeNFC() {
     
     try {
         appState.isWriting = true;
-        elements.writeBtn.textContent = '✍️ Approchez une carte NFC...';
+        elements.writeBtn.textContent = 'Approchez l\'appareil du tag NFC...';
         elements.writeBtn.disabled = true;
         updateStatus('Prêt pour l\'écriture...', 'writing');
 
         const ndef = new NDEFReader();
         const data = elements.writeData.value.trim();
-        const recordType = elements.recordType.value;
+        const recordType = appState.currentRecordType;
         
         let record;
         switch (recordType) {
             case 'url':
                 record = { recordType: 'url', data };
                 break;
-            case 'mime':
-                record = { recordType: 'mime', mediaType: 'text/plain', data };
+            case 'contact':
+                record = { recordType: 'text', data };
+                break;
+            case 'email':
+                record = { recordType: 'text', data: `mailto:${data}` };
+                break;
+            case 'wifi':
+                record = { recordType: 'text', data };
                 break;
             default:
                 record = { recordType: 'text', data };
@@ -184,7 +303,7 @@ async function writeNFC() {
         await ndef.write({ records: [record] });
         
         // Affichage du succès
-        elements.writeStatus.textContent = 'Écriture réussie !';
+        elements.writeStatus.textContent = 'Écriture réussie sur le tag NFC !';
         elements.writeStatus.className = 'status-message success';
         elements.writeResult.style.display = 'block';
         
@@ -198,17 +317,20 @@ async function writeNFC() {
         updateStatus('Écriture réussie !', 'success');
         
         // Réinitialisation du formulaire
-        elements.writeData.value = '';
+        setTimeout(() => {
+            elements.writeData.value = '';
+            closeWriteFormModal();
+        }, 2000);
         
     } catch (error) {
         console.error('Erreur d\'écriture NFC:', error);
-        elements.writeStatus.textContent = `Erreur: ${error.message}`;
+        elements.writeStatus.textContent = `Error: ${error.message}`;
         elements.writeStatus.className = 'status-message error';
         elements.writeResult.style.display = 'block';
         updateStatus(`Erreur: ${error.message}`, 'error');
     } finally {
         appState.isWriting = false;
-        elements.writeBtn.textContent = '✍️ Écrire sur la carte';
+        elements.writeBtn.textContent = 'Écrire sur tag';
         updateWriteButtonState();
     }
 }
@@ -230,31 +352,36 @@ function addToHistory(type, data) {
     }
     
     localStorage.setItem('nfc-history', JSON.stringify(appState.history));
-    renderHistory();
 }
 
 function renderHistory() {
     if (appState.history.length === 0) {
-        elements.history.innerHTML = '<p class="empty-state">Aucune opération effectuée</p>';
+        elements.history.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📱</div>
+                <p>Aucun tag sauvegardé</p>
+                <span>Les tags sauvegardés apparaîtront ici</span>
+            </div>
+        `;
         return;
     }
     
     elements.history.innerHTML = appState.history
         .map(item => {
             const date = new Date(item.timestamp);
-            const timeStr = date.toLocaleString('fr-FR');
+            const timeStr = date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
             const typeIcon = item.type === 'read' ? '📖' : '✏️';
             const typeText = item.type === 'read' ? 'Lecture' : 'Écriture';
             
             let preview = '';
             if (item.type === 'read') {
-                preview = `${item.data.records.length} enregistrement(s)`;
+                preview = `${item.data.records.length} record(s)`;
                 if (item.data.serialNumber) {
-                    preview += ` • SN: ${item.data.serialNumber.substring(0, 8)}...`;
+                    preview += ` • ${item.data.serialNumber.substring(0, 12)}...`;
                 }
             } else {
-                preview = item.data.data.substring(0, 50);
-                if (item.data.data.length > 50) preview += '...';
+                preview = item.data.data.substring(0, 40);
+                if (item.data.data.length > 40) preview += '...';
             }
             
             return `
@@ -274,9 +401,8 @@ function showHistoryDetails(id) {
     const item = appState.history.find(h => h.id === id);
     if (!item) return;
     
-    elements.modalTitle.textContent = `Détails - ${item.type === 'read' ? 'Lecture' : 'Écriture'}`;
-    elements.modalContent.textContent = JSON.stringify(item.data, null, 2);
-    elements.modal.style.display = 'flex';
+    const title = `${item.type === 'read' ? 'Lecture' : 'Écriture'} - Détails`;
+    openDetailModal(title, item.data);
 }
 
 function clearHistory() {
@@ -290,56 +416,79 @@ function clearHistory() {
 
 // Gestion de l'état du bouton d'écriture
 function updateWriteButtonState() {
+    if (!elements.writeData) return;
     const hasData = elements.writeData.value.trim().length > 0;
     const isAvailable = checkCompatibility() && !appState.isWriting;
     elements.writeBtn.disabled = !hasData || !isAvailable;
 }
 
-// Gestion du modal
-function closeModal() {
-    elements.modal.style.display = 'none';
-}
-
 // Gestion des événements
 function setupEventListeners() {
-    elements.readBtn.addEventListener('click', readNFC);
-    elements.writeBtn.addEventListener('click', writeNFC);
-    elements.writeData.addEventListener('input', updateWriteButtonState);
-    elements.clearHistory.addEventListener('click', clearHistory);
-    elements.closeModal.addEventListener('click', closeModal);
+    // Tool Cards
+    elements.scanCard?.addEventListener('click', openScanModal);
+    elements.writeCard?.addEventListener('click', openWriteModal);
+    elements.savedCard?.addEventListener('click', openHistoryModal);
     
-    // Fermer le modal en cliquant à l'extérieur
-    elements.modal.addEventListener('click', (e) => {
-        if (e.target === elements.modal) {
-            closeModal();
-        }
+    // Scan Modal
+    elements.readBtn?.addEventListener('click', readNFC);
+    
+    // Write Modal - Record Types
+    document.querySelectorAll('.record-type').forEach(recordType => {
+        recordType.addEventListener('click', () => {
+            const type = recordType.dataset.type;
+            openWriteFormModal(type);
+        });
     });
     
-    // Fermer le modal avec Échap
+    // Write Form
+    elements.writeBtn?.addEventListener('click', writeNFC);
+    elements.writeData?.addEventListener('input', updateWriteButtonState);
+    
+    // History
+    elements.clearHistory?.addEventListener('click', clearHistory);
+    
+    // Close modals on background click
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+                setTimeout(() => modal.style.display = 'none', 300);
+            }
+        });
+    });
+    
+    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && elements.modal.style.display !== 'none') {
-            closeModal();
+        if (e.key === 'Escape') {
+            const activeModal = document.querySelector('.modal.active');
+            if (activeModal) {
+                activeModal.classList.remove('active');
+                setTimeout(() => activeModal.style.display = 'none', 300);
+            }
         }
     });
 }
+
+// Fonctions globales pour le HTML
+window.closeScanModal = closeScanModal;
+window.closeWriteModal = closeWriteModal;
+window.closeWriteFormModal = closeWriteFormModal;
+window.closeHistoryModal = closeHistoryModal;
+window.closeDetailModal = closeDetailModal;
+window.showHistoryDetails = showHistoryDetails;
 
 // Initialisation
 function init() {
-    console.log('🚀 Initialisation de NFC Connect');
+    console.log('🚀 Initialisation NFCTools');
     
     if (checkCompatibility()) {
-        updateStatus('Prêt à utiliser', 'success');
+        updateStatus('Prêt à scanner', 'success');
     }
     
     setupEventListeners();
-    renderHistory();
-    updateWriteButtonState();
     
     console.log('✅ Application initialisée');
 }
-
-// Fonction globale pour l'historique (appelée depuis le HTML)
-window.showHistoryDetails = showHistoryDetails;
 
 // Démarrage de l'application
 if (document.readyState === 'loading') {

@@ -3,97 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFC Connect - Lecture & Écriture NFC</title>
+    <title>NFCTools - Lecture & Écriture NFC</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo">
-                <div class="nfc-icon">📡</div>
-                <h1>NFC Connect</h1>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                </div>
+                <h1 class="app-title">NFC Connect App</h1>
+                <div class="header-right">
+                </div>
             </div>
-            <p class="subtitle">Lecture et écriture de cartes NFC</p>
         </header>
 
-        <div class="status-bar">
-            <div id="status" class="status">En attente...</div>
-            <div id="compatibility" class="compatibility-warning" style="display: none;">
-                ⚠️ Votre navigateur ne supporte pas l'API Web NFC
-            </div>
+
+        <!-- Status -->
+        <div id="status" class="status-indicator">
+            <span class="status-dot"></span>
+            <span class="status-text">Prêt à scanner</span>
+        </div>
+        
+        <div id="compatibility" class="compatibility-warning" style="display: none;">
+            ⚠️ Votre navigateur ne supporte pas l'API Web NFC
         </div>
 
-        <div class="main-content">
-            <!-- Section Lecture -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>📖 Lire une carte NFC</h2>
+        <!-- Main Tools -->
+        <div class="tools-grid">
+            <!-- Scan Tool -->
+            <div class="tool-card scan-card" id="scanCard">
+                <div class="tool-icon scan-icon">
+                    <svg viewBox="0 0 24 24" width="28" height="28">
+                        <path fill="currentColor" d="M9,2A1,1 0 0,1 10,3V4.5L12,6.5L14,4.5V3A1,1 0 0,1 15,2A1,1 0 0,1 16,3V5.5L18.5,8H20A1,1 0 0,1 21,9A1,1 0 0,1 20,10H18.5L16,7.5V9A1,1 0 0,1 15,10A1,1 0 0,1 14,9V7.5L12,9.5L10,7.5V9A1,1 0 0,1 9,10A1,1 0 0,1 8,9V7.5L5.5,10H4A1,1 0 0,1 3,9A1,1 0 0,1 4,8H5.5L8,5.5V3A1,1 0 0,1 9,2M12,12A6,6 0 0,1 18,18A6,6 0 0,1 12,24A6,6 0 0,1 6,18A6,6 0 0,1 12,12M12,14A4,4 0 0,0 8,18A4,4 0 0,0 12,22A4,4 0 0,0 16,18A4,4 0 0,0 12,14Z"/>
+                    </svg>
                 </div>
-                <div class="card-content">
-                    <button id="readBtn" class="btn btn-primary">
-                        <span class="btn-icon">🔍</span>
-                        Commencer la lecture
-                    </button>
-                    <div id="readResult" class="result-container" style="display: none;">
-                        <h3>Données lues :</h3>
-                        <div id="readData" class="data-display"></div>
-                    </div>
+                <div class="tool-info">
+                    <h3>Scanner carte</h3>
+                    <p>Lire les cartes NFC pour inspecter le contenu</p>
                 </div>
+                <div class="tool-arrow">›</div>
             </div>
 
-            <!-- Section Écriture -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>✏️ Écrire sur une carte NFC</h2>
+            <!-- Write Tool -->
+            <div class="tool-card write-card" id="writeCard">
+                <div class="tool-icon write-icon">
+                    <svg viewBox="0 0 24 24" width="28" height="28">
+                        <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+                    </svg>
                 </div>
-                <div class="card-content">
-                    <div class="input-group">
-                        <label for="writeData">Message à écrire :</label>
-                        <textarea id="writeData" placeholder="Entrez votre message ici..." rows="3"></textarea>
-                    </div>
-                    <div class="input-group">
-                        <label for="recordType">Type d'enregistrement :</label>
-                        <select id="recordType">
-                            <option value="text">Texte</option>
-                            <option value="url">URL</option>
-                            <option value="mime">MIME</option>
-                        </select>
-                    </div>
-                    <button id="writeBtn" class="btn btn-secondary" disabled>
-                        <span class="btn-icon">✍️</span>
-                        Écrire sur la carte
-                    </button>
-                    <div id="writeResult" class="result-container" style="display: none;">
-                        <div id="writeStatus" class="status-message"></div>
-                    </div>
+                <div class="tool-info">
+                    <h3>Écrire sur carte</h3>
+                    <p>Écrire du contenu sur NFC en plusieurs formats</p>
                 </div>
+                <div class="tool-arrow">›</div>
             </div>
 
-            <!-- Section Historique -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>📋 Historique</h2>
-                    <button id="clearHistory" class="btn btn-small">Effacer</button>
+            <!-- Other Tools -->
+            <div class="tool-card tools-card" id="toolsCard">
+                <div class="tool-icon tools-icon">
+                    <svg viewBox="0 0 24 24" width="28" height="28">
+                        <path fill="currentColor" d="M22.7,19L13.6,9.9C14.5,7.6 14,4.9 12.1,3C10.1,1 7.1,0.6 4.7,1.7L9,6L6,9L1.6,4.7C0.4,7.1 0.9,10.1 2.9,12.1C4.8,14 7.5,14.5 9.8,13.6L18.9,22.7C19.3,23.1 19.9,23.1 20.3,22.7L22.6,20.4C23.1,20 23.1,19.3 22.7,19Z"/>
+                    </svg>
                 </div>
-                <div class="card-content">
-                    <div id="history" class="history-container">
-                        <p class="empty-state">Aucune opération effectuée</p>
+                <div class="tool-info">
+                    <h3>Autres outils</h3>
+                    <p>Effacer, bloquer carte NFC, gérer mot de passe</p>
+                </div>
+                <div class="tool-arrow">›</div>
+            </div>
+
+            <!-- Saved Cartes -->
+            <div class="tool-card saved-card" id="savedCard">
+                <div class="tool-icon saved-icon">
+                    <svg viewBox="0 0 24 24" width="28" height="28">
+                        <path fill="currentColor" d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z"/>
+                    </svg>
+                </div>
+                <div class="tool-info">
+                    <h3>Cartes sauvegardées</h3>
+                    <p>Toutes vos cartes sauvegardées sont stockés ici</p>
+                </div>
+                <div class="tool-arrow">›</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Scan Modal -->
+    <div id="scanModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="back-btn" onclick="closeScanModal()">‹</button>
+                <h3>Scanner carte NFC</h3>
+                <div></div>
+            </div>
+            <div class="modal-body">
+                <div class="scan-area">
+                    <div class="scan-animation-large">
+                        <div class="scan-waves"></div>
+                        <div class="nfc-icon-large">📱</div>
+                    </div>
+                    <p class="scan-instruction">Approchez votre appareil d'une carte NFC</p>
+                    <button id="readBtn" class="btn btn-primary">Commencer le scan</button>
+                </div>
+                <div id="readResult" class="scan-results" style="display: none;">
+                    <h4>Contenu de la carte :</h4>
+                    <div id="readData" class="tag-data"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Write Modal -->
+    <div id="writeModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="back-btn" onclick="closeWriteModal()">‹</button>
+                <h3>Ajouter enregistrement</h3>
+                <div></div>
+            </div>
+            <div class="modal-body">
+                <div class="record-types">
+                    <div class="record-type" data-type="url">
+                        <div class="record-icon url-icon">🔗</div>
+                        <div class="record-info">
+                            <h4>URL</h4>
+                            <p>Ajouter URL</p>
+                        </div>
+                        <div class="record-arrow">›</div>
+                    </div>
+                    
+                    <div class="record-type" data-type="text">
+                        <div class="record-icon text-icon">📄</div>
+                        <div class="record-info">
+                            <h4>Texte</h4>
+                            <p>Ajouter texte</p>
+                        </div>
+                        <div class="record-arrow">›</div>
+                    </div>
+                    
+                    <div class="record-type" data-type="contact">
+                        <div class="record-icon contact-icon">👤</div>
+                        <div class="record-info">
+                            <h4>Contact</h4>
+                            <p>Ajouter contact</p>
+                        </div>
+                        <div class="record-arrow">›</div>
+                    </div>
+                    
+                    <div class="record-type" data-type="email">
+                        <div class="record-icon email-icon">📧</div>
+                        <div class="record-info">
+                            <h4>Email</h4>
+                            <p>Ajouter email</p>
+                        </div>
+                        <div class="record-arrow">›</div>
+                    </div>
+                    
+                    <div class="record-type" data-type="wifi">
+                        <div class="record-icon wifi-icon">📶</div>
+                        <div class="record-info">
+                            <h4>Wi-Fi</h4>
+                            <p>Ajouter Wi-Fi</p>
+                        </div>
+                        <div class="record-arrow">›</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal pour les détails -->
-    <div id="modal" class="modal" style="display: none;">
+    <!-- Write Form Modal -->
+    <div id="writeFormModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modalTitle">Détails</h3>
-                <button id="closeModal" class="close-btn">×</button>
+                <button class="back-btn" onclick="closeWriteFormModal()">‹</button>
+                <h3 id="writeFormTitle">Ajouter texte</h3>
+                <div></div>
             </div>
             <div class="modal-body">
-                <pre id="modalContent"></pre>
+                <div class="write-form">
+                    <div class="input-group">
+                        <label for="writeData">Contenu :</label>
+                        <textarea id="writeData" placeholder="Entrez votre contenu ici..." rows="4"></textarea>
+                    </div>
+                    <button id="writeBtn" class="btn btn-secondary" disabled>Écrire sur carte</button>
+                    <div id="writeResult" class="write-result" style="display: none;">
+                        <div id="writeStatus" class="status-message"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="back-btn" onclick="closeHistoryModal()">‹</button>
+                <h3>Cartes NFC sauvegardées</h3>
+                <button id="clearHistory" class="clear-btn">Effacer</button>
+            </div>
+            <div class="modal-body">
+                <div id="history" class="history-list">
+                    <div class="empty-state">
+                        <div class="empty-icon">📱</div>
+                        <p>Aucune carte sauvegardée</p>
+                        <span>Les cartes sauvegardées apparaîtront ici</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detailModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="back-btn" onclick="closeDetailModal()">‹</button>
+                <h3 id="detailTitle">Détails d'une carte</h3>
+                <div></div>
+            </div>
+            <div class="modal-body">
+                <pre id="detailContent"></pre>
             </div>
         </div>
     </div>
