@@ -678,6 +678,90 @@ textarea:focus {
     white-space: pre-wrap;
 }
 
+/* Modales d'authentification */
+.pin-modal .modal-content,
+.password-modal .modal-content {
+    max-width: 350px;
+    width: 90%;
+}
+
+.pin-container,
+.password-container {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.pin-instruction,
+.password-instruction {
+    font-size: 16px;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.pin-input,
+.password-input {
+    width: 100%;
+    padding: 16px;
+    font-size: 18px;
+    text-align: center;
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    transition: border-color 0.3s ease;
+    background: var(--white);
+    color: var(--text-primary);
+}
+
+.pin-input:focus,
+.password-input:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(0, 210, 106, 0.1);
+}
+
+.pin-buttons,
+.password-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.pin-buttons .btn,
+.password-buttons .btn {
+    flex: 1;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--radius-small);
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background: var(--background);
+    color: var(--text-primary);
+}
+
+/* Animation pour les erreurs d'authentification */
+.pin-input.error,
+.password-input.error {
+    animation: shake 0.5s ease-in-out;
+    border-color: #ff4757 !important;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
 /* Animations */
 @keyframes pulse {
     0%, 100% {

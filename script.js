@@ -3,7 +3,16 @@ const appState = {
     isReading: false,
     isWriting: false,
     currentRecordType: 'text',
-    history: JSON.parse(localStorage.getItem('nfc-history') || '[]')
+    history: JSON.parse(localStorage.getItem('nfc-history') || '[]'),
+    // Nouveaux états pour l'authentification
+    isReadAuthenticated: false,
+    isWriteAuthenticated: false
+};
+
+// Constantes d'authentification
+const AUTH_CONFIG = {
+    READ_PIN: '1234',
+    WRITE_PASSWORD: 'AZERTY'
 };
 
 // Éléments DOM
@@ -120,6 +129,147 @@ function closeDetailModal() {
     hideModal(elements.detailModal);
 }
 
+// Nouvelles fonctions d'authentification
+function showPinModal(title, callback) {
+    const modal = document.createElement('div');
+    modal.className = 'modal pin-modal active';
+    modal.style.display = 'flex';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <div></div>
+                <h3>${title}</h3>
+                <button class="close-btn" onclick="closePinModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="pin-container">
+                    <p class="pin-instruction">Entrez le code PIN :</p>
+                    <input type="password" id="pinInput" class="pin-input" placeholder="••••" maxlength="4">
+                    <div class="pin-buttons">
+                        <button class="btn btn-secondary" onclick="closePinModal()">Annuler</button>
+                        <button class="btn btn-primary" onclick="verifyPin('${callback}')">Valider</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.getElementById('pinInput').focus();
+    
+    // Gérer la touche Entrée
+    document.getElementById('pinInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            verifyPin(callback);
+        }
+    });
+    
+    window.currentPinModal = modal;
+}
+
+function showPasswordModal(title, callback) {
+    const modal = document.createElement('div');
+    modal.className = 'modal password-modal active';
+    modal.style.display = 'flex';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <div></div>
+                <h3>${title}</h3>
+                <button class="close-btn" onclick="closePasswordModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="password-container">
+                    <p class="password-instruction">Entrez le mot de passe :</p>
+                    <input type="password" id="passwordInput" class="password-input" placeholder="••••••">
+                    <div class="password-buttons">
+                        <button class="btn btn-secondary" onclick="closePasswordModal()">Annuler</button>
+                        <button class="btn btn-primary" onclick="verifyPassword('${callback}')">Valider</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.getElementById('passwordInput').focus();
+    
+    // Gérer la touche Entrée
+    document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            verifyPassword(callback);
+        }
+    });
+    
+    window.currentPasswordModal = modal;
+}
+
+function closePinModal() {
+    if (window.currentPinModal) {
+        window.currentPinModal.remove();
+        window.currentPinModal = null;
+    }
+}
+
+function closePasswordModal() {
+    if (window.currentPasswordModal) {
+        window.currentPasswordModal.remove();
+        window.currentPasswordModal = null;
+    }
+}
+
+function verifyPin(callback) {
+    const pinInput = document.getElementById('pinInput');
+    const enteredPin = pinInput.value;
+    
+    if (enteredPin === AUTH_CONFIG.READ_PIN) {
+        appState.isReadAuthenticated = true;
+        closePinModal();
+        updateStatus('Authentification réussie', 'success');
+        
+        // Exécuter le callback
+        if (callback === 'readNFC') {
+            readNFC();
+        }
+    } else {
+        pinInput.value = '';
+        pinInput.style.borderColor = '#ff4757';
+        pinInput.placeholder = 'Code incorrect !';
+        setTimeout(() => {
+            pinInput.style.borderColor = '';
+            pinInput.placeholder = '••••';
+        }, 2000);
+        updateStatus('Code PIN incorrect', 'error');
+    }
+}
+
+function verifyPassword(callback) {
+    const passwordInput = document.getElementById('passwordInput');
+    const enteredPassword = passwordInput.value;
+    
+    if (enteredPassword === AUTH_CONFIG.WRITE_PASSWORD) {
+        appState.isWriteAuthenticated = true;
+        closePasswordModal();
+        updateStatus('Authentification réussie', 'success');
+        
+        // Exécuter le callback
+        if (callback === 'writeNFC') {
+            writeNFC();
+        }
+    } else {
+        passwordInput.value = '';
+        passwordInput.style.borderColor = '#ff4757';
+        passwordInput.placeholder = 'Mot de passe incorrect !';
+        setTimeout(() => {
+            passwordInput.style.borderColor = '';
+            passwordInput.placeholder = '••••••';
+        }, 2000);
+        updateStatus('Mot de passe incorrect', 'error');
+    }
+}
+
 // Helpers
 function getPlaceholderText(recordType) {
     const placeholders = {
@@ -214,6 +364,12 @@ function displayFormattedData(container, data) {
 
 // Lecture NFC
 async function readNFC() {
+    // Vérifier l'authentification
+    if (!appState.isReadAuthenticated) {
+        showPinModal('Code PIN requis pour la lecture', 'readNFC');
+        return;
+    }
+    
     if (appState.isReading) return;
     
     try {
@@ -265,11 +421,19 @@ async function readNFC() {
         appState.isReading = false;
         elements.readBtn.textContent = 'Commencer le scan';
         elements.readBtn.disabled = false;
+        // Réinitialiser l'authentification après utilisation
+        appState.isReadAuthenticated = false;
     }
 }
 
 // Écriture NFC
 async function writeNFC() {
+    // Vérifier l'authentification
+    if (!appState.isWriteAuthenticated) {
+        showPasswordModal('Mot de passe requis pour l\'écriture', 'writeNFC');
+        return;
+    }
+    
     if (appState.isWriting || !elements.writeData.value.trim()) return;
     
     try {
@@ -332,6 +496,8 @@ async function writeNFC() {
         appState.isWriting = false;
         elements.writeBtn.textContent = 'Écrire sur tag';
         updateWriteButtonState();
+        // Réinitialiser l'authentification après utilisation
+        appState.isWriteAuthenticated = false;
     }
 }
 
@@ -476,6 +642,10 @@ window.closeWriteFormModal = closeWriteFormModal;
 window.closeHistoryModal = closeHistoryModal;
 window.closeDetailModal = closeDetailModal;
 window.showHistoryDetails = showHistoryDetails;
+window.closePinModal = closePinModal;
+window.closePasswordModal = closePasswordModal;
+window.verifyPin = verifyPin;
+window.verifyPassword = verifyPassword;
 
 // Initialisation
 function init() {
